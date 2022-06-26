@@ -1,26 +1,22 @@
-import { Component } from 'react';
+import { useState } from 'react';
 import ImageGallery from './ImageGallery/ImageGallery';
 import Searchbar from './Searchbar/Searchbar'
 import s from './App.module.css'
 
-export class App extends Component {
-  state = {
-    imageName: '',
+export function App() {
+  const [imageName, setImageName] = useState('');
+
+  const handleFormSubmit = imageName => {
+    setImageName(imageName);
   };
 
-  handleFormSubmit = imageName => {
-    this.setState({imageName})
-  };
-
-  render() {
-    return (
-      <div className={s.App}>
-          <Searchbar
-            // onSubmit це пропси, а не слухач подій
-            onSubmit={this.handleFormSubmit}
-          />
-        <ImageGallery imageName={ this.state.imageName} />
-      </div>
-    )
-  };
+  return (
+    <div className={s.App}>
+      <Searchbar
+        // onSubmit це пропси, а не слухач подій
+        onSubmit={handleFormSubmit}
+      />
+      <ImageGallery imageName={imageName} />
+    </div>
+  );
 };
