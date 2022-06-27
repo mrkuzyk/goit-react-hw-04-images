@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from 'prop-types';
 import s from './ImageGallery.module.css';
 import ImageGalleryItem from '../ImageGalleryItem/ImageGalleryItem';
@@ -7,144 +7,127 @@ import { StartSearch, ImageNotFound } from '../messageTitle/messageTitle';
 import Loader from '../Loader/Loader';
 import Modal from '../Modal/Modal';
 
-export default class ImageGallery extends Component{
-    state = {
-        images: [],
-        error: null,
-        loader: false,
-        totalHits: null,
-        page: 1,
-        perPage: 12,
-        searchName: '',
-        showModal: false,
-        largeImage: '',
-        imageTags: '',
-    }
+export default function ImageGallery({imageName}) {
+    const [images, setImages] = useState([]);
+    const [error, setError] = useState(null);
+    const [loader, setLoader] = useState(false);
+    const [totalHits, setTotalHits] = useState(null);
+    const [page, setPage] = useState(1);
+    const [searchName, setSearchName] = useState('');
+    const [showModal, setShowModal] = useState(false);
+    const [largeImage, setLargeImage] = useState('');
+    const [imageTags, setImageTags] = useState('');
 
-    componentDidUpdate(prevProps, prevState) {
-        const {perPage} = this.state;
-        const prevName = prevProps.imageName; // значення попереднього пошуку
-        const nextName = this.props.imageName; // значення теперішнього пошуку
+    const perPage = 12;
+
+    useEffect(() => {
+        if (!imageName) {
+            return
+        }
+
+        // console.log('pre', page);
         const startSearshPage = 1; // примусово починаю з першої сторінки
-
-        
-        // якщо попередній пошук відрізняється він наступного то ми шукаємо
-        if (prevName !== nextName) {
-            // this.setState({status: 'pending'}) //включаю лоадер
-            this.setState({
-                loader: true, // включаю лоадер
-                images: [], // очищую масив картинок
-            })
-            fetch(`https://pixabay.com/api/?q=${nextName}&page=${startSearshPage}&key=27124011-562ac77f1fd2864e5ddfeb16c&image_type=photo&orientation=horizontal&per_page=${perPage}`)
+        setLoader(true); // включаю лоадер
+        setImages([]);
+        fetch(`https://pixabay.com/api/?q=${imageName}&page=${startSearshPage}&key=27124011-562ac77f1fd2864e5ddfeb16c&image_type=photo&orientation=horizontal&per_page=${perPage}`)
                 .then(response => {
                     if (response.ok) {
                         return response.json()
                     }
 
                     return Promise.reject (
-                        new Error(`Незнайдено зображень з ім'ям ${nextName}`)
+                        new Error(`Незнайдено зображень з ім'ям ${imageName}`)
                     )
                 })
                 .then(images => {
                     // console.log(images);
-                    this.setState(prevState => ({
-                        searchName: nextName,
-                        images: images.hits,
-                        // status: 'resolved',
-                        loader: false, // виключаю лоадер після загрузки
-                        totalHits: images.totalHits, // загальна кількість картинок
-                        page: 1 // кожен новий пошук починається з 1 сторінки
-
-                        }))
+                    setPage(1); // кожен новий пошук починається з 1 сторінки
+                    setSearchName(imageName);
+                    setImages(images.hits);
+                    setLoader(false); // виключаю лоадер після загрузки
+                    setTotalHits(images.totalHits);  // загальна кількість картинок
+                    // console.log('post', page);
                 })
-                .catch(error => this.setState({
-                    error,
-                    // status: 'rejected',
-                    loader: false
-                }))
-        };
-    };
+            .catch(error =>{
+                setError(error);
+                setLoader(false);
+            })
+    },[imageName]);
+    
 
-    morePageClick = () => {
-        const {searchName, page, perPage} = this.state;
-        
-        // this.setState({ status: 'pending' }) 
-        this.setState({loader: true}) //включаю лоадер
-        
-        fetch(`https://pixabay.com/api/?q=${searchName}&page=${page +1}&key=27124011-562ac77f1fd2864e5ddfeb16c&image_type=photo&orientation=horizontal&per_page=${perPage}`)
+    useEffect(() => {
+        if (!searchName) {
+            return
+        }
+        setLoader(true); //включаю лоадер
+
+        console.log('pre-page', page);
+        fetch(`https://pixabay.com/api/?q=${searchName}&page=${page + 1}&key=27124011-562ac77f1fd2864e5ddfeb16c&image_type=photo&orientation=horizontal&per_page=${perPage}`)
             .then(response => {
-                    return response.json()
+                return response.json()
             })
             .then(images => {
-                this.setState(prevState => ({
-                    images: [...prevState.images, ...images.hits], // додаю наступні сторінки до попердніх
-                    // status: 'resolved',
-                    loader: false,
-                    page: prevState.page +1 // записую нову сторінку в стейдж
-                }))
+                setImages(prevImages => [...prevImages, ...images.hits]); // додаю наступні сторінки до попердніх
+                setLoader(false);
             })
-            .catch(error => this.setState({
-                error,
-                // status: 'rejected'
-                loader: false
-            }))
+            .catch(error => {
+                setError(error);
+                setLoader(false);
+            })
+    }, [page, searchName]);
+
+    const morePageClick = () => {
+        setPage(prevPage => prevPage + 1); // записую нову сторінку в стейдж
     };
 
-    galleryItemClick = (largeImage, imageTags) => {
+    const galleryItemClick = (largeImage, imageTags) => {
         // console.log(imageTags);
-        this.setState({
-            largeImage, //приймаю і записую велику картинку
-            imageTags //приймаю і записую опис
-        })
-        this.toggleModal()
+        setLargeImage(largeImage);
+        setImageTags(imageTags);
+
+        toggleModal()
     }
     
-    toggleModal = () => {
-        this.setState(state => ({
-            showModal: !state.showModal
-        }))
+    const toggleModal = () => {
+        setShowModal(prevShowModal => !prevShowModal);
     }
-
-    render() {
-        const { imageName } = this.props;
-        const { error, images, totalHits, perPage, page, loader, showModal, largeImage, imageTags} = this.state;
-        const pages = totalHits / perPage; //рахую кількість сторінок
+        // const { imageName } = this.props;
+    // const pages = totalHits / perPage; //рахую кількість сторінок
 
         return (
             <div className="s.container">
                 {!imageName && <StartSearch/>}
                 {totalHits === 0 && 
                     <ImageNotFound
-                        name={ this.props.imageName}
+                        name={ imageName}
                     />
                 }
                 {error && <h1>{error.message}</h1>}
                 {loader && <Loader/> }
-                {this.state.images && 
+                {images && 
                     <ul className={s.gallery}>
                         {images.map(( image ) =>
                             <ImageGalleryItem
                                 key={image.id}
                                 image={image}
-                                onClick={this.galleryItemClick}
+                                onClick={galleryItemClick}
                             />)}
                     </ul>
                 }
-                {page < pages &&
+                {page < totalHits / perPage &&
                     <Button
-                        onClick={this.morePageClick}
+                        onClick={morePageClick}
                     />
                 }
                 {showModal &&
                     <Modal
                         url={largeImage}
                         alt={imageTags}
-                        onClick={this.toggleModal}
+                        onClick={toggleModal}
                     />
                 }
             </div>
         )
-    };
 };
 
 ImageGallery.propTypes = {
