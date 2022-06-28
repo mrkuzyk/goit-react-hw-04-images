@@ -62,6 +62,7 @@ export default function ImageGallery({imageName}) {
                 setError(error);
                 setLoader(false);
             })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     },[imageName, page, perPage]);
 
     const morePageClick = () => {
