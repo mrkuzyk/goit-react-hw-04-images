@@ -46,16 +46,18 @@ export default function ImageGallery({imageName}) {
             .then(images => {
                 // console.log('рендер');
                 if (page > 1) {
+                    console.log('next');
                     //якщо це не перша сторнка, значить натиснута кнопка завантажити більше
                     setImages(prevImages => [...prevImages, ...images.hits]); // додаю наступні сторінки до попердніх
                     setLoader(false);
                 } else {
+                    console.log('first')
                     setPage(1);
                     setSearchName(imageName);
                     setImages(images.hits);
                     setLoader(false); // виключаю лоадер після загрузки
                     setTotalHits(images.totalHits);  // загальна кількість картинок
-                    setPerPage(images.hits.length)
+                    setPerPage(prevPerPage => prevPerPage); // перезаписую кількість на сторінці, щоб не сварився редактор
                 }
             })
             .catch(error =>{
@@ -100,8 +102,9 @@ export default function ImageGallery({imageName}) {
                                 onClick={galleryItemClick}
                             />)}
                     </ul>
+                    
                 }
-                {page < totalHits / perPage && !loader &&
+                {page < totalHits / perPage &&
                     <Button
                         onClick={morePageClick}
                     />
